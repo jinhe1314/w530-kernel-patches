@@ -1,0 +1,37 @@
+diff -ru linux-3.7/drivers/input/keyboard/atkbd.c linux-3.7-mod/drivers/input/keyboard/atkbd.c
+--- linux-3.7/drivers/input/keyboard/atkbd.c	2012-12-11 04:30:57.000000000 +0100
++++ linux-3.7-mod/drivers/input/keyboard/atkbd.c	2013-02-10 18:29:48.582114753 +0100
+@@ -548,6 +548,24 @@
+ 	return ps2_command(&atkbd->ps2dev, &param, ATKBD_CMD_SETREP);
+ }
+ 
++/* Using the filesystem like this is almost 100% the wrong way to do things. */
++static void set_mic_mute_led(int on)
++{
++	struct file *filp;
++	loff_t offset;
++
++	filp = filp_open("/sys/devices/platform/thinkpad_acpi/leds/tpacpi::micmute/brightness", O_RDWR, 0);
++	if (IS_ERR(filp))
++		return;
++	offset = 0;
++	if (on)
++		vfs_write(filp, "255\n", 4, &offset);
++	else
++		vfs_write(filp, "0\n", 2, &offset);
++	generic_file_fsync(filp, 0, offset, 0);
++	filp_close(filp, NULL);
++}
++
+ static int atkbd_set_leds(struct atkbd *atkbd)
+ {
+ 	struct input_dev *dev = atkbd->dev;
+@@ -558,6 +576,8 @@
+ 		 | (test_bit(LED_CAPSL,   dev->led) ? 4 : 0);
+ 	if (ps2_command(&atkbd->ps2dev, param, ATKBD_CMD_SETLEDS))
+ 		return -1;
++	
++	set_mic_mute_led(test_bit(LED_CAPSL, dev->led));
+ 
+ 	if (atkbd->extra) {
+ 		param[0] = 0;
