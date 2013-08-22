@@ -1,0 +1,33 @@
+From 8f45637d7c37087325f27b2c1a676befc24746eb Mon Sep 17 00:00:00 2001
+From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+Date: Thu, 22 Aug 2013 15:47:35 +0200
+Subject: [PATCH 3/3] thinkpad_acpi: Wire unused micmute LED to capslock
+
+Thinkpads with a micmute LED do not have a capslock LED. The micmute LED
+is currently not used by any piece of Linux kernel land or user land. It
+seems reasonable to hook it up to caps lock, at least by default, so
+users can have some degree of functionality.
+
+Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
+---
+ drivers/platform/x86/thinkpad_acpi.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 33b23cb..708fdb8 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -5235,6 +5235,10 @@ static int __init tpacpi_init_led(unsigned int led)
+ 
+ 	tpacpi_leds[led].led_classdev.name = tpacpi_led_names[led];
+ 
++	/* Special case wiring micmute to caps-lock by default. */
++	if (led == 14)
++		tpacpi_leds[led].led_classdev.default_trigger = "caps-lock";
++
+ 	INIT_WORK(&tpacpi_leds[led].work, led_set_status_worker);
+ 
+ 	rc = led_classdev_register(&tpacpi_pdev->dev,
+-- 
+1.8.3.2
+
